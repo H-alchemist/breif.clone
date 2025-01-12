@@ -84,15 +84,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initial render
     renderTasks();
 
-    // Modal elements
     const modal = document.getElementById('taskModal');
     const taskForm = document.getElementById('taskForm');
     const cancelBtn = modal.querySelector('.cancel-btn');
 
-    // Add task button click handlers
     document.querySelectorAll('.add-task-btn').forEach(button => {
         button.addEventListener('click', function() {
             currentColumn = this.closest('.tasks-container').id;
@@ -100,13 +97,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Cancel button handler
     cancelBtn.addEventListener('click', function() {
         modal.classList.remove('show');
         taskForm.reset();
     });
 
-    // Form submit handler
     taskForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
