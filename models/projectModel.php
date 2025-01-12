@@ -171,6 +171,28 @@ WHERE
         ];
         return DB::query($query, $params);
     }
+
+    public function checkAdmin($project_id, $user_id) {
+        $query = "SELECT user_id FROM projects WHERE id = :id";
+        $params = [
+            'id' => $project_id,
+        ];
+        
+        try {
+            $res = DB::query($query, $params);
+            
+            // Check if result exists and if the user_id matches
+            if (isset($res['user_id']) && $res['user_id'] === $user_id) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (\PDOException $e) {
+            error_log("Error checking admin: " . $e->getMessage());
+            return false; // Return false on error
+        }
+    }
+    
 }
 
 ?>

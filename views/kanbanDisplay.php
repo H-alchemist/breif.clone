@@ -128,7 +128,10 @@ $taskModel = new TaskModel();
                         <option value="">Select team member</option>
                     </select>
                 </div>
-                <button type="submit">Create Task</button>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create Task</button>
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                </div>
             </form>
         </div>
     </div>

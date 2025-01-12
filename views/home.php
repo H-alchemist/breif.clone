@@ -19,7 +19,7 @@
             <?php if (isset($_SESSION['user'])): ?>
                 <a href="/myproject">My Projects</a>
                 <a href="/mytasks">My Tasks</a>
-                <span><?php echo $_SESSION['user']['username']; ?></span>
+                <span><?php echo $_SESSION['user']['username']  ?></span>
             <?php endif; ?>
             
            
@@ -49,9 +49,7 @@
         
       
         
-        <button class="new-board-btn" id="newProjectBtn">
-            <i class="fas fa-plus"></i> Create Project
-        </button>
+        
        
     </header>
 

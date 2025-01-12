@@ -342,6 +342,7 @@ async function showAssignModal(task) {
 
 async function loadTasks() {
     try {
+        console.log('Fetching tasks for project:', projectId);
         const response = await fetch('/CRUDTask', {
             method: 'POST',
             headers: {
@@ -353,11 +354,21 @@ async function loadTasks() {
             })
         });
 
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+            console.log('Parsed response:', result);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            throw new Error('Invalid response format from server');
         }
 
-        const result = await response.json();
         if (!result.success) {
             throw new Error(result.message || 'Failed to load tasks');
         }
@@ -373,6 +384,7 @@ async function loadTasks() {
 
         // Add tasks to their respective containers
         if (Array.isArray(result.data)) {
+            console.log('Tasks to render:', result.data);
             result.data.forEach(task => {
                 if (task && task.state) {
                     const container = document.querySelector(`[data-state="${task.state.toLowerCase()}"] .tasks-container`);
@@ -380,16 +392,20 @@ async function loadTasks() {
                         const taskCard = createTaskCard(task);
                         const addButton = container.querySelector('.add-task-btn');
                         container.insertBefore(taskCard, addButton);
+                    } else {
+                        console.warn('Container not found for state:', task.state);
                     }
+                } else {
+                    console.warn('Invalid task data:', task);
                 }
             });
         } else {
-            console.error('No tasks data received');
+            console.error('No tasks data received or invalid format:', result.data);
         }
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error in loadTasks:', error);
         const errorMessage = document.createElement('div');
-        errorMessage.className = 'alert alert-error';
+        errorMessage.className = 'alert alert-danger';
         errorMessage.textContent = error.message || 'Error loading tasks. Please try again.';
         document.body.appendChild(errorMessage);
         setTimeout(() => errorMessage.remove(), 3000);
@@ -689,6 +705,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const addButtons = document.querySelectorAll('.add-task-btn');
     const closeBtn = document.querySelector('.close-btn');
     const taskForm = document.getElementById('taskForm');
+    let currentColumn = null;
+
+    // Get project ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('id');
+
+    if (!projectId) {
+        console.error('Project ID not found in URL');
+    }
 
     // Show modal with column state
     addButtons.forEach(button => {
@@ -767,7 +792,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            const response = await fetch('/api/tasks', {
+            const response = await fetch('/CRUDTask', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -788,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Network response was not ok');
             }
 
-            const result = await response.json();
+            
             
             if (result.success) {
                 // Clear form

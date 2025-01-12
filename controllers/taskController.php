@@ -2,17 +2,28 @@
 
 namespace controllers;
 
+use models\ProjectModel;
 use models\TaskModel;
 use models\AssignTasksModel;
+use models\RolePerModel;
 
 /**
  * TaskController handles task-related requests.
  */
 class TaskController {
     private $taskModel;
+    private $RP;
+
+    private $PA;
 
     public function __construct() {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->taskModel = new TaskModel();
+        $this->RP = new RolePerModel();
+        $this->PA = new ProjectModel();
+        
     }
 
     /**
@@ -24,6 +35,15 @@ class TaskController {
                 throw new \Exception('Method Not Allowed');
             }
 
+            if (!isset($_SESSION['user'])) {
+                http_response_code(401);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ]);
+                return;
+            }
+
             $rawInput = file_get_contents('php://input');
             $requestData = json_decode($rawInput, true);
 
@@ -32,33 +52,85 @@ class TaskController {
             }
 
             $action = $requestData['action'] ?? '';
+            $project_id = $requestData['project_id'] ?? null;
+
+            if (!$project_id) {
+                throw new \Exception('Project ID is required');
+            }
 
             switch ($action) {
                 case 'create':
+                    if (!$this->PA->checkAdmin( $project_id, $_SESSION['user']['id']) && !$this->RP->getUserPermissions($_SESSION['user']['id'], $project_id, 'Create')) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Not authorized to create tasks'
+                        ]);
+                        return;
+                    }
                     $this->createTask($requestData);
                     break;
+
                 case 'getTasksByProject':
-                    $projectId = $requestData['project_id'] ?? null;
-                    $this->getTasksByProject($projectId);
+                    $this->getTasksByProject($project_id);
                     break;
+
                 case 'getTasksByState':
                     $this->getTasksByState($requestData['state']);
                     break;
+
                 case 'updateTask':
+                    if (!$this->RP->checkPermission($_SESSION['user_id'], $project_id, 'Edit Tasks')) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Not authorized to update tasks'
+                        ]);
+                        return;
+                    }
                     $this->updateTask($requestData);
                     break;
+
                 case 'deleteTask':
+                    if (!$this->RP->checkPermission($_SESSION['user_id'], $project_id, 'Delete Tasks')) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Not authorized to delete tasks'
+                        ]);
+                        return;
+                    }
                     $this->deleteTask($requestData['id']);
                     break;
+
                 case 'assignTask':
+                    if (!$this->RP->checkPermission($_SESSION['user_id'], $project_id, 'Assign Tasks')) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Not authorized to assign tasks'
+                        ]);
+                        return;
+                    }
                     $this->assignTask($requestData);
                     break;
+
                 case 'getAssignedUsers':
                     $this->getAssignedUsers($requestData['task_id']);
                     break;
+
                 case 'removeAssignment':
+                    if (!$this->RP->checkPermission($_SESSION['user_id'], $project_id, 'Assign Tasks')) {
+                        http_response_code(403);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'Not authorized to remove task assignments'
+                        ]);
+                        return;
+                    }
                     $this->removeAssignment($requestData);
                     break;
+
                 default:
                     throw new \Exception('Invalid action');
             }
@@ -151,7 +223,7 @@ class TaskController {
 
         http_response_code(200);
         echo json_encode([
-            'success' => 'here',
+            'success' => true,
             'data' => $tasks
         ]);
     }
@@ -308,6 +380,21 @@ class TaskController {
             ]);
         }
     }
+
+    public function checkPermission($project_id, $user_id) {
+        $role = $this->RP->getRoleByUserId($user_id);
+        $permission = $this->RP->getPermissionByRoleAndProject($role, $project_id);
+          
+        
+        
+
+
+    }
+
+
+
+
+
 }
 
 ?>
